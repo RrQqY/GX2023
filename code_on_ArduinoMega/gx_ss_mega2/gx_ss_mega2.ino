@@ -101,7 +101,7 @@ void setup() {
   Serial.begin(9600);
 
   serial_imu.begin(115200);
-  serial_pi1.begin(115200);
+  serial_pi1.begin(9600);
   serial_pi2.begin(115200);
   
   serial_tof1.begin(115200);
@@ -110,7 +110,7 @@ void setup() {
   serial_tof4.begin(115200);
 
   // IIC初始化
-  JY901.StartIIC();
+  // JY901.StartIIC();
 
   // FlexiTimer2::set(10, control);  // 10毫秒定时中断函数
   // FlexiTimer2::start();                     // 中断使能
@@ -149,30 +149,38 @@ void start() {
   // move_dist_time(1, 0);
   // read_move_order();
   // move_dist_time(1, 0);
-  while(1){
-    unsigned long stime = millis();
-    read_dist_tof_ros();
-    unsigned long etime = millis();
-    Serial.print(x_dist);
-    Serial.print(", "); 
-    Serial.print(y_dist); 
-    Serial.print(", "); 
-    Serial.println(etime-stime);
-  }
-  // Serial.print(x_move); 
+  // while(1){
+  //   unsigned long stime = millis();
+  //   read_dist_tof_ros();
+  //   unsigned long etime = millis();
+  //   Serial.print(x_dist);
+  //   Serial.print(", "); 
+  //   Serial.print(y_dist); 
+  //   Serial.print(", "); 
+  //   Serial.println(etime-stime);
+  // }
 
-  move_dist_dy(0.1);
-  delay_ms(500);
-  move_dist_dx(-0.1);
-  delay_ms(500);
-  move_dist_dy(-0.1);
-  delay_ms(500);
-  move_dist_dx(0.1);
-  delay_ms(500);
+  // move_dist_dy(-0.5);
+  // delay_ms(500);
+  // move_dist_dx(-0.6);
+  // delay_ms(500);
 
+  // while(1){
+  //   read_bias();
+  //   Serial.print(x_bias);
+  //   Serial.print(", ");
+  //   Serial.println(y_bias);
+  // }
+  // move_dist_time(0.04, 0);
+  // move_compensate_x();
+  // move_compensate_x();
+  // move_compensate_y();
+  // move_compensate_y();
   // while(1){
   //   send_move_end();
   // }
+
+
   // while(1){
   //   // 从串口中读取移动指令
   //   read_move_order();
@@ -187,11 +195,114 @@ void start() {
   //     }
   //   }
   // }
+  
+  int order_head = 1;
+  while(1){
+    // 从串口中读取指令头
+    order_head = read_order_head();
+
+    if(order_head == 1){
+      // 从串口中读取移动指令
+      read_move_order();
+      // 如果接收到移动指令
+      if(move_read_flag == 1){
+        if((x_move != 0.0) && (y_move == 0.0)){
+          // move_dist_dx(x_move);
+          move_to_x(x_move);
+        }
+        else if((x_move == 0.0) && (y_move != 0.0)){
+          // move_dist_dy(y_move);
+          move_to_y(y_move);
+        }
+      }
+    }
+    // 补偿 (上侧)
+    else if(order_head == 2){
+      move_compensate_x(order_head);
+      // move_compensate_x();
+      // move_compensate_y();
+      move_compensate_y(order_head);
+
+      send_compensate_end();      
+    }
+    // 补偿 (左侧)
+    else if(order_head == 3){
+      move_compensate_y(order_head);
+      // move_compensate_x();
+      // move_compensate_y();
+      move_compensate_x(order_head);
+
+      send_compensate_end();      
+    }
+    // 冲指定时间
+    else if(order_head == 4){
+      // 从串口中读取移动指令
+      read_rush_order();
+      // 如果接收到移动指令
+      if(rush_read_flag == 1){
+        if((x_rush != 0.0) && (y_rush == 0.0)){
+          move_time_dx(x_rush);
+        }
+        else if((x_rush == 0.0) && (y_rush != 0.0)){
+          move_time_dy(y_rush);
+        }
+      }
+    }
+    // 改变目标角度
+    else if(order_head == 5){
+      // 从串口中读取改变目标角度指令
+      int angle_flag = 0;
+      angle_flag = read_change_order();
+      if(change_read_flag == 1){
+        // 开始前角度
+        // if(angle_flag == 1){
+        //   yaw_start = get_yaw();
+        //   Serial.println("@@");
+        // }
+        // 结束后角度
+        if(angle_flag == 2){
+          yaw_end = get_yaw(1);
+          // double yaw_delta = yaw_end - yaw_start;
+          // yaw_bias += yaw_delta;
+          yaw_bias = yaw_end;
+          // Serial.print("!!");
+          // Serial.println(yaw_bias*100);
+        }
+        change_read_flag = 0;
+      }
+    }
+  }
 }
 
 
 void loop() { 
   start();                  // 运行开始阶段函数
+  // while(1){
+  //   Serial.println(get_yaw(0));
+  // }
+  
+  // move_read_flag = 1;
+  // move_to_y(0.4);
+  // delay_ms(500);
+
+  // while(1){
+  //   move_read_flag = 1;
+
+  //   move_to_y(2);
+  //   delay_ms(500);
+
+  //   move_read_flag = 1;
+  //   move_to_x(2);
+  //   delay_ms(500);
+
+  //   move_read_flag = 1;
+  //   move_to_y(0.4);
+  //   delay_ms(500);
+
+  //   move_read_flag = 1;
+  //   move_to_x(0.4);
+  //   delay_ms(500);
+  // }
 
   while(1){};
 }

@@ -1,4 +1,3 @@
-
 #ifndef __GX_SS_H
 #define __GX_SS_H
 
@@ -32,6 +31,8 @@
 #include "AccelStepper.h"          // 步进电机驱动库
 #include "SoftwareSerial.h"        // 软串口通信库
 #include <DFRobot_IICSerial.h>     // IIC转串口模块库
+// #include <REG.h>
+// #include <wit_c_sdk.h>
 
 #include "utilities.h"
 #include "move.h"

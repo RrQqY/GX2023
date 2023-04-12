@@ -22,9 +22,12 @@ double y_pre = 0.0;
 double targetDist_tof_x = 0.0;
 double targetDist_tof_y = 0.0;
 
+int change_yaw_times = 0;
 
 // 从imu中读取当前倾角，修正电机速度
 void PID_yaw() {
+  static double outDelta_old = 0;
+  static double feedbackYaw_old = 0;
   static double newYawPulses_yaw = 0;         // 四个车轮的定时中断编码器四倍频速度
   static double feedbackYawVel_yaw = 0;
   static double outYawPWM_yaw = 0;
@@ -38,32 +41,60 @@ void PID_yaw() {
   //   outYawPWM_old_yaw = 0;
   // }
   // else{
-    // 陀螺仪矫正pid控制器
-    feedbackYawVel_yaw = get_yaw();
+  // 陀螺仪矫正pid控制器
+  feedbackYawVel_yaw = get_yaw(0);
+  // Serial.println(feedbackYawVel_yaw);
 
-    outYawPWM_yaw = PID_yaw.Compute(targetYawPulses, feedbackYawVel_yaw);
-    if(outYawPWM_yaw > YawPWM_MAX){
-        outYawPWM_yaw = YawPWM_MAX;
-    }  
-
-    // Serial.println(outYawPWM_yaw);
+  // 将角度变化限制在1.5°范围内
+  if((feedbackYawVel_yaw - feedbackYaw_old) > 2.5){
+    feedbackYawVel_yaw =  feedbackYaw_old + 2.5;
+  }
+  else if((feedbackYawVel_yaw - feedbackYaw_old) < -2.5){
+    feedbackYawVel_yaw =  feedbackYaw_old - 2.5;
+  }
+  // feedbackYaw_old = feedbackYawVel_yaw;
+  // Serial.println(targetYawPulses);
   
-    // // 将陀螺仪矫正速度加到编码器目标速度上，除5是为了将PWM转换为编码器脉冲数
-    // targetPulses[0] -= (outYawPWM_yaw - outYawPWM_old_yaw)/5;
-    // targetPulses[1] += (outYawPWM_yaw - outYawPWM_old_yaw)/5;
-    // targetPulses[2] -= (outYawPWM_yaw - outYawPWM_old_yaw)/5;
-    // targetPulses[3] += (outYawPWM_yaw - outYawPWM_old_yaw)/5;
-    // 将陀螺仪矫正速度加到编码器目标速度上
-    speed1 -= (outYawPWM_yaw - outYawPWM_old_yaw);
-    speed2 += (outYawPWM_yaw - outYawPWM_old_yaw);
-    speed3 -= (outYawPWM_yaw - outYawPWM_old_yaw);
-    speed4 += (outYawPWM_yaw - outYawPWM_old_yaw);
+
+  outYawPWM_yaw = PID_yaw.Compute(targetYawPulses, feedbackYawVel_yaw);
+  // if(outYawPWM_yaw > YawPWM_MAX){
+  //     outYawPWM_yaw = YawPWM_MAX;
+  // }  
+
+  // Serial.println(outYawPWM_yaw);
+
+  // // 将陀螺仪矫正速度加到编码器目标速度上，除5是为了将PWM转换为编码器脉冲数
+  // targetPulses[0] -= (outYawPWM_yaw - outYawPWM_old_yaw)/5;
+  // targetPulses[1] += (outYawPWM_yaw - outYawPWM_old_yaw)/5;
+  // targetPulses[2] -= (outYawPWM_yaw - outYawPWM_old_yaw)/5;
+  // targetPulses[3] += (outYawPWM_yaw - outYawPWM_old_yaw)/5;
+  // 将陀螺仪矫正速度加到编码器目标速度上
+  
+  // Serial.print(feedbackYawVel_yaw);
+  // Serial.print("@@");
+  // Serial.println((outYawPWM_yaw));
+  // if(!((abs(outDelta_old - (outYawPWM_yaw - outYawPWM_old_yaw)) > 2000) && ((abs(outYawPWM_yaw - outYawPWM_old_yaw)<100) || ((outYawPWM_yaw - outYawPWM_old_yaw) == -outDelta_old))) || (change_yaw_times == 1)){
+  double delta_change = 0.0;
+  // delta_change = outDelta_old - (outYawPWM_yaw - outYawPWM_old_yaw);
 
 
-    outYawPWM_old_yaw = outYawPWM_yaw;
-    //Serial.println(outYawPWM_yaw);
-    //set_speed(targetPulses[0], targetPulses[1], targetPulses[2], targetPulses[3]); 
-    
+  speed1 -= (outYawPWM_yaw - outYawPWM_old_yaw);
+  speed2 += (outYawPWM_yaw - outYawPWM_old_yaw);
+  speed3 -= (outYawPWM_yaw - outYawPWM_old_yaw);
+  speed4 += (outYawPWM_yaw - outYawPWM_old_yaw);
+  // change_yaw_times = 0;
+
+  // Serial.print(", ");
+  // Serial.println(speed1);
+
+  outDelta_old = outYawPWM_yaw - outYawPWM_old_yaw;
+
+  // Serial.println(outYawPWM_yaw - outYawPWM_old_yaw);
+
+  outYawPWM_old_yaw = outYawPWM_yaw;
+  //Serial.println(outYawPWM_yaw);
+  //set_speed(targetPulses[0], targetPulses[1], targetPulses[2], targetPulses[3]); 
+  
 //  }
 }
 
@@ -322,6 +353,7 @@ void move_dist_time(double dx, double dy) {
     if((t1 == 0) || (t2 == 0)) return;
 
     set_speed_target((-kx + ky)*move_speed, (kx + ky)*move_speed, (kx + ky)*move_speed, (-kx + ky)*move_speed);
+    set_speed_to_stepper();
     //Serial.println(speed2);
     //set_speed_to_stepper();
     unsigned long delta_t1 = millis() + t1 * 1000;
@@ -334,6 +366,7 @@ void move_dist_time(double dx, double dy) {
     }
 
     set_speed_target((-kx + ky)*move_speed_slow, (kx + ky)*move_speed_slow, (kx + ky)*move_speed_slow, (-kx + ky)*move_speed_slow);
+    set_speed_to_stepper();
     unsigned long delta_t2 = millis() + t2 * 1000;
     while(millis() < delta_t2){
       PID_yaw();
@@ -360,6 +393,7 @@ void move_dist_time(double dx, double dy) {
     if(t2 == 0) return;
 
     set_speed_target((-kx + ky)*move_speed_slow, (kx + ky)*move_speed_slow, (kx + ky)*move_speed_slow, (-kx + ky)*move_speed_slow);
+    set_speed_to_stepper();
 
     unsigned long delta_t2 = millis() + t2 * 1000;
     while(millis() < delta_t2){
@@ -377,6 +411,315 @@ void move_dist_time(double dx, double dy) {
 }
 
 
+// 移动x轴指定时间
+// 以y_dist作为法向平移矫正
+void move_time_dx(double dx) {
+  int read_tof_flag = 0;
+  int move_dir_flag = 1;
+  double sub_temp = 0.0;
+  double start_time, present_time = 0.0;
+  if(dx == 0) return;
+
+  dx = dx * 1000;
+
+  PID_tof_y(1);          // 重置PID参数
+
+  // 获取当前绝对位置
+  read_dist_tof_ros();
+  targetDist_tof_y = y_dist;
+
+  // 判断移动方向正负
+  if(dx >= 0){
+    move_dir_flag = 1;
+  }
+  else if(dx < 0){
+    move_dir_flag = -1;
+  }
+  
+//   double kx = dx / sqrt(pow(dx,2) + pow(dy,2));
+  set_speed_target(move_dir_flag * -rush_speed*slide_k, move_dir_flag * rush_speed*slide_k, 
+                    move_dir_flag * rush_speed*slide_k, move_dir_flag * -rush_speed*slide_k);
+  
+  start_time = millis();
+  while (1) {
+    present_time = millis();
+    if((present_time - start_time) >= dx){
+      set_speed_target(0, 0, 0, 0);
+      set_speed_to_stepper();
+      rush_read_flag = 0;
+
+      send_move_end();        // 发送移动结束信号
+      break;
+    }
+
+    // 获取当前绝对位置
+    if(read_tof_flag >= read_tof_freq) {
+      read_dist_tof_ros();
+    }
+    
+    PID_yaw();                      // 方向矫正
+
+    if(read_tof_flag >= read_tof_freq) {
+      PID_tof_y(0);                 // 水平距离矫正
+      read_tof_flag = 0;
+    }
+
+    set_speed_to_stepper();
+    // Serial.println(y_dist);
+    // run_speed();
+    set_speed();
+
+    read_tof_flag++;
+  }
+}
+
+
+// 移动y轴指定时间
+// 以x_dist作为法向平移矫正
+void move_time_dy(double dy) {
+  int read_tof_flag = 0;
+  int move_dir_flag = 1;
+  double sub_temp = 0.0;
+  double start_time, present_time = 0.0;
+  if(dy == 0) return;
+
+  dy = dy * 1000;
+
+  PID_tof_x(1);          // 重置PID参数
+
+  // 获取当前绝对位置
+  read_dist_tof_ros();
+  targetDist_tof_x = x_dist;
+
+  // 判断移动方向正负
+  if(dy >= 0){
+    move_dir_flag = 1;
+  }
+  else if(dy < 0){
+    move_dir_flag = -1;
+  }
+  
+//   double kx = dx / sqrt(pow(dx,2) + pow(dy,2));
+  set_speed_target(move_dir_flag * rush_speed*slide_k, move_dir_flag * rush_speed*slide_k, 
+                    move_dir_flag * rush_speed*slide_k, move_dir_flag * rush_speed*slide_k);
+  
+  start_time = millis();
+  while (1) {
+    present_time = millis();
+    if((present_time - start_time) >= dy){
+      set_speed_target(0, 0, 0, 0);
+      set_speed_to_stepper();
+      rush_read_flag = 0;
+
+      send_move_end();        // 发送移动结束信号
+      break;
+    }
+
+    // 获取当前绝对位置
+    if(read_tof_flag >= read_tof_freq) {
+      read_dist_tof_ros();
+    }
+    
+    PID_yaw();                      // 方向矫正
+
+    if(read_tof_flag >= read_tof_freq) {
+      PID_tof_x(0);                 // 水平距离矫正
+      read_tof_flag = 0;
+    }
+
+    set_speed_to_stepper();
+    // Serial.println(y_dist);
+    // run_speed();
+    set_speed();
+
+    read_tof_flag++;
+  }
+}
+
+
+// 移动到y位置
+// 从tof传感器（激光雷达）计算得到当前绝对位置
+// 以y_dist作为移动目标条件，x_dist作为法向平移矫正
+void move_to_y(double dy) {
+  int read_tof_flag = 0;
+  int change_speed_flag = 0;
+  int change_speed_flag_pre = 0;
+  int move_dir_flag = 1;
+  double sub_temp = 0.0;
+  // Serial.println("@@@@@@@");
+  if(dy == 0) return;
+
+  y_pre += dy;
+
+  PID_tof_x(1);          // 重置PID参数
+
+  // 获取当前绝对位置
+  read_dist_tof_ros();
+
+  // 判断移动方向正负
+  if((dy - y_dist) >= 0){
+    move_dir_flag = 1;
+  }
+  else if((dy - y_dist) < 0){
+    move_dir_flag = -1;
+  }
+
+  targetDist_tof_x = x_dist;
+  // Serial.println(targetDist_tof_x);
+
+  double y_target = dy;
+  // Serial.println(y_dist);
+
+//   double ky = dy / sqrt(pow(dx,2) + pow(dy,2));
+  set_speed_target(move_dir_flag * move_speed, move_dir_flag * move_speed, move_dir_flag * move_speed, move_dir_flag * move_speed);
+  while (1) {
+    // 获取当前绝对位置
+    if(read_tof_flag >= read_tof_freq) {
+      read_dist_tof_ros();
+      // Serial.println(y_dist);
+    }
+
+    // 如果还未到指定位置
+    sub_temp = move_dir_flag * (y_target - y_dist);
+    // Serial.println(sub_temp);
+    if(sub_temp > dist_threshold_far) {
+      change_speed_flag = 1;
+    }
+    else if(sub_temp > dist_threshold_close) {
+      change_speed_flag = 2;
+    }
+    else {
+      change_speed_flag = 3;
+    }
+
+    if((change_speed_flag == 1) && (change_speed_flag > change_speed_flag_pre)) {
+      set_speed_target(move_dir_flag * move_speed, move_dir_flag * move_speed, move_dir_flag * move_speed, move_dir_flag * move_speed);
+    }
+    else if((change_speed_flag == 2) && (change_speed_flag > change_speed_flag_pre)) {
+      set_speed_target(move_dir_flag * move_speed_slow, move_dir_flag * move_speed_slow, move_dir_flag * move_speed_slow, move_dir_flag * move_speed_slow);
+    }
+    else if((change_speed_flag == 3) && (change_speed_flag > change_speed_flag_pre)){
+      set_speed_target(0, 0, 0, 0);
+      set_speed_to_stepper();
+      move_read_flag = 0;
+
+      send_move_end();        // 发送移动结束信号
+      break;
+    }
+
+    change_speed_flag_pre = change_speed_flag;
+    
+    if(change_speed_flag == 1){
+      PID_yaw();                      // 方向矫正
+    }
+    
+    if(read_tof_flag >= read_tof_freq) {
+      // PID_tof_x(0);                 // 水平距离矫正
+      read_tof_flag = 0;
+    }
+
+    set_speed_to_stepper();
+    // Serial.println(y_dist);
+    // run_speed();
+    set_speed();
+
+    read_tof_flag++;
+  }
+}
+
+
+// 移动到x位置
+// 从tof传感器（激光雷达）计算得到当前绝对位置
+// 以x_dist作为移动目标条件，y_dist作为法向平移矫正
+void move_to_x(double dx) {
+  int read_tof_flag = 0;
+  int change_speed_flag = 0;
+  int change_speed_flag_pre = 0;
+  int move_dir_flag = 1;
+  double sub_temp = 0.0;
+  if(dx == 0) return;
+
+  x_pre += dx;
+
+  PID_tof_y(1);          // 重置PID参数
+
+  // 获取当前绝对位置
+  read_dist_tof_ros();
+
+  // 判断移动方向正负
+  if((dx - x_dist) >= 0){
+    move_dir_flag = 1;
+  }
+  else if((dx - x_dist) < 0){
+    move_dir_flag = -1;
+  }
+
+  targetDist_tof_y = y_dist;
+
+  double x_target = dx;
+  //Serial.println(x_dist);
+  
+//   double kx = dx / sqrt(pow(dx,2) + pow(dy,2));
+  set_speed_target(move_dir_flag * -move_speed*slide_k, move_dir_flag * move_speed*slide_k, 
+                    move_dir_flag * move_speed*slide_k, move_dir_flag * -move_speed*slide_k);
+  while (1) {
+    // 获取当前绝对位置
+    if(read_tof_flag >= read_tof_freq) {
+      read_dist_tof_ros();
+    }
+
+    // 如果还未到指定位置
+    sub_temp = move_dir_flag * (x_target - x_dist);
+    if(sub_temp > dist_threshold_far) {
+      // Serial.println("--------------------------------");
+      change_speed_flag = 1;
+    }
+    else if(sub_temp > dist_threshold_close) {
+      // Serial.println("--------------------------------");
+      change_speed_flag = 2;
+    }
+    else{
+      change_speed_flag = 3;
+    }
+
+    if((change_speed_flag == 1) && (change_speed_flag > change_speed_flag_pre)) {
+      set_speed_target(move_dir_flag * -move_speed*slide_k, move_dir_flag * move_speed*slide_k, 
+                        move_dir_flag * move_speed*slide_k, move_dir_flag * -move_speed*slide_k);
+    }
+    else if((change_speed_flag == 2) && (change_speed_flag > change_speed_flag_pre)) {
+      set_speed_target(move_dir_flag * -move_speed_slow*slide_k, move_dir_flag * move_speed_slow*slide_k, 
+                        move_dir_flag * move_speed_slow*slide_k, move_dir_flag * -move_speed_slow*slide_k);
+    }
+    else if((change_speed_flag == 3) && (change_speed_flag > change_speed_flag_pre)){
+      set_speed_target(0, 0, 0, 0);
+      set_speed_to_stepper();
+      move_read_flag = 0;
+
+      send_move_end();        // 发送移动结束信号
+      break;
+    }
+
+    change_speed_flag_pre = change_speed_flag;
+    
+    if(change_speed_flag == 1){
+      PID_yaw();                      // 方向矫正
+    }
+
+    if(read_tof_flag >= read_tof_freq) {
+      // PID_tof_y(0);                 // 水平距离矫正
+      read_tof_flag = 0;
+    }
+
+    set_speed_to_stepper();
+    // Serial.println(y_dist);
+    // run_speed();
+    set_speed();
+
+    read_tof_flag++;
+  }
+}
+
+
 // 移动到与当前位置相对dx的位置
 // 从tof传感器（激光雷达）计算得到当前绝对位置
 // 以x_dist作为移动目标条件，y_dist作为法向平移矫正
@@ -385,6 +728,7 @@ void move_dist_dx(double dx) {
   int change_speed_flag = 0;
   int change_speed_flag_pre = 0;
   int move_dir_flag = 1;
+  double sub_temp = 0.0;
   if(dx == 0) return;
 
   x_pre += dx;
@@ -396,7 +740,7 @@ void move_dist_dx(double dx) {
   targetDist_tof_y = y_dist;
 
   double x_target = x_dist + dx;
-  Serial.println(x_dist);
+  //Serial.println(x_dist);
 
   // 判断移动方向正负
   if(dx >= 0){
@@ -407,7 +751,8 @@ void move_dist_dx(double dx) {
   }
   
 //   double kx = dx / sqrt(pow(dx,2) + pow(dy,2));
-  set_speed_target(move_dir_flag * -move_speed, move_dir_flag * move_speed, move_dir_flag * move_speed, move_dir_flag * -move_speed);
+  set_speed_target(move_dir_flag * -move_speed*slide_k, move_dir_flag * move_speed*slide_k, 
+                    move_dir_flag * move_speed*slide_k, move_dir_flag * -move_speed*slide_k);
   while (1) {
     // 获取当前绝对位置
     if(read_tof_flag >= read_tof_freq) {
@@ -415,28 +760,33 @@ void move_dist_dx(double dx) {
     }
 
     // 如果还未到指定位置
-    if(abs(x_target - x_dist) > dist_threshold_close) {
+    sub_temp = move_dir_flag * (x_target - x_dist);
+    if(sub_temp > dist_threshold_far) {
+      // Serial.println("--------------------------------");
       change_speed_flag = 1;
     }
-    // else if(abs(x_target - x_dist) > dist_threshold_close) {
-    //   change_speed_flag = 2;
-    // }
+    else if(sub_temp > dist_threshold_close) {
+      // Serial.println("--------------------------------");
+      change_speed_flag = 2;
+    }
     else{
       change_speed_flag = 3;
     }
 
     if((change_speed_flag == 1) && (change_speed_flag > change_speed_flag_pre)) {
-      set_speed_target(move_dir_flag * -move_speed, move_dir_flag * move_speed, move_dir_flag * move_speed, move_dir_flag * -move_speed);
+      set_speed_target(move_dir_flag * -move_speed*slide_k, move_dir_flag * move_speed*slide_k, 
+                        move_dir_flag * move_speed*slide_k, move_dir_flag * -move_speed*slide_k);
     }
-    // else if((change_speed_flag == 2) && (change_speed_flag > change_speed_flag_pre)) {
-    //   set_speed_target(move_dir_flag * -move_speed_slow, move_dir_flag * move_speed_slow, move_dir_flag * move_speed_slow, move_dir_flag * -move_speed_slow);
-    // }
+    else if((change_speed_flag == 2) && (change_speed_flag > change_speed_flag_pre)) {
+      set_speed_target(move_dir_flag * -move_speed_slow*slide_k, move_dir_flag * move_speed_slow*slide_k, 
+                        move_dir_flag * move_speed_slow*slide_k, move_dir_flag * -move_speed_slow*slide_k);
+    }
     else if((change_speed_flag == 3) && (change_speed_flag > change_speed_flag_pre)){
       set_speed_target(0, 0, 0, 0);
       set_speed_to_stepper();
       move_read_flag = 0;
 
-      send_move_end();
+      send_move_end();        // 发送移动结束信号
       break;
     }
 
@@ -468,6 +818,7 @@ void move_dist_dy(double dy) {
   int change_speed_flag = 0;
   int change_speed_flag_pre = 0;
   int move_dir_flag = 1;
+  double sub_temp = 0.0;
   if(dy == 0) return;
 
   y_pre += dy;
@@ -480,7 +831,6 @@ void move_dist_dy(double dy) {
   // Serial.println(targetDist_tof_x);
 
   double y_target = y_dist + dy;
-  // Serial.print("@@@@@@@@@@@@");
   // Serial.println(y_dist);
 
   // 判断移动方向正负
@@ -501,13 +851,15 @@ void move_dist_dy(double dy) {
     }
 
     // 如果还未到指定位置
-    if(abs(y_target - y_dist) > dist_threshold_far) {
+    sub_temp = move_dir_flag * (y_target - y_dist);
+    // Serial.println(sub_temp);
+    if(sub_temp > dist_threshold_far) {
       change_speed_flag = 1;
     }
-    else if(abs(y_target - y_dist) > dist_threshold_close) {
+    else if(sub_temp > dist_threshold_close) {
       change_speed_flag = 2;
     }
-    else{
+    else {
       change_speed_flag = 3;
     }
 
@@ -522,7 +874,7 @@ void move_dist_dy(double dy) {
       set_speed_to_stepper();
       move_read_flag = 0;
 
-      send_move_end();
+      send_move_end();        // 发送移动结束信号
       break;
     }
 
@@ -531,9 +883,172 @@ void move_dist_dy(double dy) {
     PID_yaw();                      // 方向矫正
 
     if(read_tof_flag >= read_tof_freq) {
-      PID_tof_x(0);                 // 水平距离矫正
+      // PID_tof_x(0);                 // 水平距离矫正
       read_tof_flag = 0;
     }
+
+    set_speed_to_stepper();
+    // Serial.println(y_dist);
+    // run_speed();
+    set_speed();
+
+    read_tof_flag++;
+  }
+}
+
+
+// 矫正x轴，移动直到上位机要求停止
+void move_compensate_x(int order_head) {
+  int read_tof_flag = 0;
+  int move_dir_flag = 1;
+  double sub_temp = 0.0;
+
+  // PID_tof_y(1);          // 重置PID参数
+
+  // // 获取当前绝对位置
+  // read_dist_tof_ros();
+  // targetDist_tof_y = y_dist;
+
+  // read_bias();
+
+//   // 判断移动方向正负
+//   if(x_bias >= 0){
+//     move_dir_flag = 1;
+//     // if(x_bias > 0.08){
+//     //   move_dist_time(x_bias/9.0, 0);
+//     // }
+//   }
+//   else if(x_bias < 0){
+//     move_dir_flag = -1;
+//     // if(x_bias < -0.08){
+//     //   move_dist_time(x_bias/9.0, 0);
+//     // }
+//   }
+  
+// //   double kx = dx / sqrt(pow(dx,2) + pow(dy,2));
+//   set_speed_target(move_dir_flag * -move_compensate*slide_k, move_dir_flag * move_compensate*slide_k, 
+//                     move_dir_flag * move_compensate*slide_k, move_dir_flag * -move_compensate*slide_k);
+  while (1) {
+    // 获取当前绝对位置
+    // if(read_tof_flag >= read_tof_freq) {
+    //   read_dist_tof_ros();
+    // }
+    // if(read_tof_flag >= 5) {
+    //   read_bias();
+    // }
+    read_bias(order_head);
+
+    // 判断移动方向正负
+    if(x_bias >= 0){
+      move_dir_flag = 1;
+      // if(x_bias > 0.08){
+      //   move_dist_time(x_bias/9.0, 0);
+      // }
+    }
+    else if(x_bias < 0){
+      move_dir_flag = -1;
+      // if(x_bias < -0.08){
+      //   move_dist_time(x_bias/9.0, 0);
+      // }
+    }
+    
+  //   double kx = dx / sqrt(pow(dx,2) + pow(dy,2));
+    set_speed_target(move_dir_flag * -move_compensate*slide_k, move_dir_flag * move_compensate*slide_k, 
+                      move_dir_flag * move_compensate*slide_k, move_dir_flag * -move_compensate*slide_k);
+
+    // read_bias();
+    // Serial.println(x_bias);
+
+    // 如果还未到指定位置
+    if(abs(x_bias) <= dist_compensate_close) {
+      set_speed_target(0, 0, 0, 0);
+      set_speed_to_stepper();
+      move_read_flag = 0;
+
+      // send_move_end();        // 发送移动结束信号
+      break;
+    }
+    
+    PID_yaw();                      // 方向矫正
+
+    // if(read_tof_flag >= read_tof_freq) {
+    //   PID_tof_y(0);                 // 水平距离矫正
+    //   read_tof_flag = 0;
+    // }
+
+    set_speed_to_stepper();
+    // Serial.println(y_dist);
+    // run_speed();
+    set_speed();
+
+    read_tof_flag++;
+  }
+}
+
+
+// 矫正y轴，移动直到上位机要求停止
+void move_compensate_y(int order_head) {
+  int read_tof_flag = 0;
+  int move_dir_flag = 1;
+  double sub_temp = 0.0;
+
+  // read_bias();
+
+//   // 判断移动方向正负
+//   if(y_bias >= y_bias_target){
+//     move_dir_flag = 1;
+//     // if(x_bias > 0.08){
+//     //   move_dist_time(x_bias/9.0, 0);
+//     // }
+//   }
+//   else if(y_bias < y_bias_target){
+//     move_dir_flag = -1;
+//     // if(x_bias < -0.08){
+//     //   move_dist_time(x_bias/9.0, 0);
+//     // }
+//   }
+  
+// //   double kx = dx / sqrt(pow(dx,2) + pow(dy,2));
+//   set_speed_target(move_dir_flag * move_compensate, move_dir_flag * move_compensate, 
+//                     move_dir_flag * move_compensate, move_dir_flag * move_compensate);
+  while (1) {
+    read_bias(order_head);
+
+    // 判断移动方向正负
+    if(y_bias >= 0){
+      move_dir_flag = 1;
+      // if(x_bias > 0.08){
+      //   move_dist_time(x_bias/9.0, 0);
+      // }
+    }
+    else if(y_bias < 0){
+      move_dir_flag = -1;
+      // if(x_bias < -0.08){
+      //   move_dist_time(x_bias/9.0, 0);
+      // }
+    }
+    
+  //   double kx = dx / sqrt(pow(dx,2) + pow(dy,2));
+    set_speed_target(move_dir_flag * move_compensate, move_dir_flag * move_compensate, 
+                      move_dir_flag * move_compensate, move_dir_flag * move_compensate);
+
+    // 如果还未到指定位置
+    if(abs(y_bias) <= dist_compensate_close) {
+      set_speed_target(0, 0, 0, 0);
+      set_speed_to_stepper();
+      move_read_flag = 0;
+
+      // Serial.println("yesssssssss");
+      // send_move_end();        // 发送移动结束信号
+      break;
+    }
+    
+    PID_yaw();                      // 方向矫正
+
+    // if(read_tof_flag >= read_tof_freq) {
+    //   PID_tof_y(0);                 // 水平距离矫正
+    //   read_tof_flag = 0;
+    // }
 
     set_speed_to_stepper();
     // Serial.println(y_dist);

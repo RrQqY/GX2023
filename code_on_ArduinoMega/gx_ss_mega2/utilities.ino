@@ -2,13 +2,11 @@
 #include "gx_ss_mega2.h"
 
 
-void delay_ms(unsigned long ms){
+void delay_ms(unsigned long ms) {
     unsigned long time_now = 0;
 
     time_now = millis();
-    while(millis() < time_now + ms){
-        ;
-    }
+    while(millis() < time_now + ms);
 }
 
 
