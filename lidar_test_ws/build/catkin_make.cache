@@ -1,0 +1,2 @@
+laser_line_extraction:ldlidar_stl_ros:lsx10/lslidar_x10:lsx10/lslidar_x10_driver:lsx10/lslidar_x10_msgs:test_pkg
+-DCATKIN_DEVEL_PREFIX=/home/rq/lidar_test_ws/devel -DCMAKE_INSTALL_PREFIX=/home/rq/lidar_test_ws/install -G Unix Makefiles

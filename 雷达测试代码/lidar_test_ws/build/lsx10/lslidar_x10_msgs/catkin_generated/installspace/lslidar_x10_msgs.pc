@@ -1,0 +1,8 @@
+prefix=/home/rq/lidar_test_ws/install
+
+Name: lslidar_x10_msgs
+Description: Description of lslidar_x10_msgs
+Version: 1.2.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: message_runtime std_msgs

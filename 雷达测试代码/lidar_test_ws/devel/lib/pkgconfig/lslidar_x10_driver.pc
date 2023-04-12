@@ -1,0 +1,8 @@
+prefix=/home/rq/lidar_test_ws/devel
+
+Name: lslidar_x10_driver
+Description: Description of lslidar_x10_driver
+Version: 1.2.0
+Cflags: -I/home/rq/lidar_test_ws/src/lsx10/lslidar_x10_driver/include
+Libs: -L${prefix}/lib 
+Requires: roscpp diagnostic_updater nodelet lslidar_x10_msgs

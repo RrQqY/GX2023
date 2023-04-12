@@ -1,0 +1,8 @@
+prefix=/home/rq/lidar_test_ws/install
+
+Name: laser_line_extraction
+Description: Description of laser_line_extraction
+Version: 0.1.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -lline -lline_extraction -lline_extraction_ros
+Requires: geometry_msgs message_runtime roscpp sensor_msgs visualization_msgs

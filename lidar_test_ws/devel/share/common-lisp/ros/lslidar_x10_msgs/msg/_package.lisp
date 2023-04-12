@@ -1,0 +1,15 @@
+(cl:defpackage lslidar_x10_msgs-msg
+  (:use )
+  (:export
+   "<LSLIDARX10DIFOP>"
+   "LSLIDARX10DIFOP"
+   "<LSLIDARX10PACKET>"
+   "LSLIDARX10PACKET"
+   "<LSLIDARX10POINT>"
+   "LSLIDARX10POINT"
+   "<LSLIDARX10SCAN>"
+   "LSLIDARX10SCAN"
+   "<LSLIDARX10SWEEP>"
+   "LSLIDARX10SWEEP"
+  ))
+
