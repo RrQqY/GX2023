@@ -1,10 +1,14 @@
-/*-------- 2023.03工程训练大赛省赛Esp32代码 --------*/
+/*-------- 2023.03工程训练大赛省赛Arduino Mega代码 --------*/
 #include "gx_ss_mega2.h"
 
 // 串口定义
-#define serial_imu    Serial1
+#define serial_imu    Serial3
 #define serial_pi1    Serial2
-#define serial_pi2    Serial3
+#define serial_pi2    Serial1
+
+// 七路传感器
+#define gray_1  22
+#define gray_2  23
 
 // 软串口定义
 // SoftwareSerial serial_tof1(53, 45);      // 软串口（前RX后TX）
@@ -22,9 +26,32 @@ AccelStepper stepper2(1, motor2STEP, motor2DIR);
 AccelStepper stepper3(1, motor3STEP, motor3DIR);
 AccelStepper stepper4(1, motor4STEP, motor4DIR);
 
+// 读灰度传感器数据
+int read_gray() {
+  int gray_flag = 3;
+  int read_gray_1 = digitalRead(gray_1);
+  int read_gray_2 = digitalRead(gray_2);
+  Serial.println(read_gray_1);
+
+  if((read_gray_1 == 0) and (read_gray_2 == 0)){
+    gray_flag = 1;
+  }
+  else if(((read_gray_1 == 1) and (read_gray_2 == 0)) or ((read_gray_1 == 0) and (read_gray_2 == 1))){
+    gray_flag = 2;
+  }
+  else{
+    gray_flag = 3;
+  }
+  return gray_flag;
+}
+
 
 // 步进电机初始化
 void motor_setup() {
+  // 灰度传感器
+  pinMode(gray_1, INPUT);
+  pinMode(gray_2, INPUT);
+
   // 1号步进电机
   pinMode(motor1EN, OUTPUT);        // Arduino控制2208步进引脚为输出模式
   pinMode(motor1STEP, OUTPUT);      // Arduino控制2208方向引脚为输出模式
@@ -218,6 +245,7 @@ void start() {
     }
     // 补偿 (上侧)
     else if(order_head == 2){
+      Serial.println("order2222222222");
       move_compensate_x(order_head);
       // move_compensate_x();
       // move_compensate_y();
@@ -238,6 +266,9 @@ void start() {
     else if(order_head == 4){
       // 从串口中读取移动指令
       read_rush_order();
+      // Serial.print(x_rush);
+      // Serial.print("@");
+      // Serial.println(y_rush);
       // 如果接收到移动指令
       if(rush_read_flag == 1){
         if((x_rush != 0.0) && (y_rush == 0.0)){
@@ -265,18 +296,39 @@ void start() {
           // double yaw_delta = yaw_end - yaw_start;
           // yaw_bias += yaw_delta;
           yaw_bias = yaw_end;
+          // PID_yaw(1);
           // Serial.print("!!");
           // Serial.println(yaw_bias*100);
         }
         change_read_flag = 0;
       }
     }
+    // 补偿 (决赛货盘)
+    else if(order_head == 7){
+      move_compensate_y(order_head);
+      // move_compensate_x();
+      // move_compensate_y();
+      move_compensate_x(order_head);
+
+      send_compensate_end();      
+    }
+    // // 出发时用灰度确定横向位置
+    // else if(order_head == 6){
+    //   move_start();
+    // }
   }
 }
 
 
 void loop() { 
+  // Serial.println("!!!!!!!!!!!");
   start();                  // 运行开始阶段函数
+
+  // while(1){
+  //   read_dist_tof_ros();
+  // }
+  
+
   // while(1){
   //   Serial.println(get_yaw(0));
   // }

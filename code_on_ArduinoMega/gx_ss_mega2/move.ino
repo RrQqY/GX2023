@@ -25,7 +25,7 @@ double targetDist_tof_y = 0.0;
 int change_yaw_times = 0;
 
 // 从imu中读取当前倾角，修正电机速度
-void PID_yaw() {
+void PID_yaw(int clear_flag) {
   static double outDelta_old = 0;
   static double feedbackYaw_old = 0;
   static double newYawPulses_yaw = 0;         // 四个车轮的定时中断编码器四倍频速度
@@ -35,67 +35,68 @@ void PID_yaw() {
   // 创建1个陀螺仪速度PID控制对象
   static PID PID_yaw = PID(PWM_MIN, PWM_MAX, Kp_yaw, Ki_yaw, Kd_yaw);
 
-  // // 每重新开始一次巡线，重置上一次的所有变量
-  // if(clear_flag == 1){
-  //   outYawPWM_yaw = 0;
-  //   outYawPWM_old_yaw = 0;
-  // }
-  // else{
-  // 陀螺仪矫正pid控制器
-  feedbackYawVel_yaw = get_yaw(0);
-  // Serial.println(feedbackYawVel_yaw);
-
-  // 将角度变化限制在1.5°范围内
-  if((feedbackYawVel_yaw - feedbackYaw_old) > 2.5){
-    feedbackYawVel_yaw =  feedbackYaw_old + 2.5;
+  // 每重新开始一次巡线，重置上一次的所有变量
+  if(clear_flag == 1){
+    outYawPWM_yaw = 0;
+    outYawPWM_old_yaw = 0;
+    PID_yaw.UpdateParameters();
   }
-  else if((feedbackYawVel_yaw - feedbackYaw_old) < -2.5){
-    feedbackYawVel_yaw =  feedbackYaw_old - 2.5;
+  else{
+    // 陀螺仪矫正pid控制器
+    feedbackYawVel_yaw = get_yaw(0);
+    // Serial.println(feedbackYawVel_yaw);
+
+    // 将角度变化限制在1.5°范围内
+    if((feedbackYawVel_yaw - feedbackYaw_old) > 2.5){
+      feedbackYawVel_yaw =  feedbackYaw_old + 2.5;
+    }
+    else if((feedbackYawVel_yaw - feedbackYaw_old) < -2.5){
+      feedbackYawVel_yaw =  feedbackYaw_old - 2.5;
+    }
+    // feedbackYaw_old = feedbackYawVel_yaw;
+    // Serial.println(targetYawPulses);
+    
+
+    outYawPWM_yaw = PID_yaw.Compute(targetYawPulses, feedbackYawVel_yaw);
+    // if(outYawPWM_yaw > YawPWM_MAX){
+    //     outYawPWM_yaw = YawPWM_MAX;
+    // }  
+
+    // Serial.println(outYawPWM_yaw);
+
+    // // 将陀螺仪矫正速度加到编码器目标速度上，除5是为了将PWM转换为编码器脉冲数
+    // targetPulses[0] -= (outYawPWM_yaw - outYawPWM_old_yaw)/5;
+    // targetPulses[1] += (outYawPWM_yaw - outYawPWM_old_yaw)/5;
+    // targetPulses[2] -= (outYawPWM_yaw - outYawPWM_old_yaw)/5;
+    // targetPulses[3] += (outYawPWM_yaw - outYawPWM_old_yaw)/5;
+    // 将陀螺仪矫正速度加到编码器目标速度上
+    
+    // Serial.print(feedbackYawVel_yaw);
+    // Serial.print("@@");
+    // Serial.println((outYawPWM_yaw));
+    // if(!((abs(outDelta_old - (outYawPWM_yaw - outYawPWM_old_yaw)) > 2000) && ((abs(outYawPWM_yaw - outYawPWM_old_yaw)<100) || ((outYawPWM_yaw - outYawPWM_old_yaw) == -outDelta_old))) || (change_yaw_times == 1)){
+    double delta_change = 0.0;
+    // delta_change = outDelta_old - (outYawPWM_yaw - outYawPWM_old_yaw);
+
+
+    speed1 -= (outYawPWM_yaw - outYawPWM_old_yaw);
+    speed2 += (outYawPWM_yaw - outYawPWM_old_yaw);
+    speed3 -= (outYawPWM_yaw - outYawPWM_old_yaw);
+    speed4 += (outYawPWM_yaw - outYawPWM_old_yaw);
+    // change_yaw_times = 0;
+
+    // Serial.print(", ");
+    // Serial.println(speed1);
+
+    outDelta_old = outYawPWM_yaw - outYawPWM_old_yaw;
+
+    // Serial.println(outYawPWM_yaw - outYawPWM_old_yaw);
+
+    outYawPWM_old_yaw = outYawPWM_yaw;
+    //Serial.println(outYawPWM_yaw);
+    //set_speed(targetPulses[0], targetPulses[1], targetPulses[2], targetPulses[3]); 
+    
   }
-  // feedbackYaw_old = feedbackYawVel_yaw;
-  // Serial.println(targetYawPulses);
-  
-
-  outYawPWM_yaw = PID_yaw.Compute(targetYawPulses, feedbackYawVel_yaw);
-  // if(outYawPWM_yaw > YawPWM_MAX){
-  //     outYawPWM_yaw = YawPWM_MAX;
-  // }  
-
-  // Serial.println(outYawPWM_yaw);
-
-  // // 将陀螺仪矫正速度加到编码器目标速度上，除5是为了将PWM转换为编码器脉冲数
-  // targetPulses[0] -= (outYawPWM_yaw - outYawPWM_old_yaw)/5;
-  // targetPulses[1] += (outYawPWM_yaw - outYawPWM_old_yaw)/5;
-  // targetPulses[2] -= (outYawPWM_yaw - outYawPWM_old_yaw)/5;
-  // targetPulses[3] += (outYawPWM_yaw - outYawPWM_old_yaw)/5;
-  // 将陀螺仪矫正速度加到编码器目标速度上
-  
-  // Serial.print(feedbackYawVel_yaw);
-  // Serial.print("@@");
-  // Serial.println((outYawPWM_yaw));
-  // if(!((abs(outDelta_old - (outYawPWM_yaw - outYawPWM_old_yaw)) > 2000) && ((abs(outYawPWM_yaw - outYawPWM_old_yaw)<100) || ((outYawPWM_yaw - outYawPWM_old_yaw) == -outDelta_old))) || (change_yaw_times == 1)){
-  double delta_change = 0.0;
-  // delta_change = outDelta_old - (outYawPWM_yaw - outYawPWM_old_yaw);
-
-
-  speed1 -= (outYawPWM_yaw - outYawPWM_old_yaw);
-  speed2 += (outYawPWM_yaw - outYawPWM_old_yaw);
-  speed3 -= (outYawPWM_yaw - outYawPWM_old_yaw);
-  speed4 += (outYawPWM_yaw - outYawPWM_old_yaw);
-  // change_yaw_times = 0;
-
-  // Serial.print(", ");
-  // Serial.println(speed1);
-
-  outDelta_old = outYawPWM_yaw - outYawPWM_old_yaw;
-
-  // Serial.println(outYawPWM_yaw - outYawPWM_old_yaw);
-
-  outYawPWM_old_yaw = outYawPWM_yaw;
-  //Serial.println(outYawPWM_yaw);
-  //set_speed(targetPulses[0], targetPulses[1], targetPulses[2], targetPulses[3]); 
-  
-//  }
 }
 
 
@@ -359,7 +360,7 @@ void move_dist_time(double dx, double dy) {
     unsigned long delta_t1 = millis() + t1 * 1000;
     while(millis() < delta_t1){
     // while(1){
-      PID_yaw();
+      PID_yaw(0);
       set_speed_to_stepper();
       set_speed();
       //run_speed();
@@ -369,7 +370,7 @@ void move_dist_time(double dx, double dy) {
     set_speed_to_stepper();
     unsigned long delta_t2 = millis() + t2 * 1000;
     while(millis() < delta_t2){
-      PID_yaw();
+      PID_yaw(0);
       set_speed_to_stepper();
       // run_speed();
       set_speed();
@@ -397,7 +398,7 @@ void move_dist_time(double dx, double dy) {
 
     unsigned long delta_t2 = millis() + t2 * 1000;
     while(millis() < delta_t2){
-      PID_yaw();
+      PID_yaw(0);
       set_speed_to_stepper();
       // run_speed();
       set_speed();
@@ -424,9 +425,9 @@ void move_time_dx(double dx) {
 
   PID_tof_y(1);          // 重置PID参数
 
-  // 获取当前绝对位置
-  read_dist_tof_ros();
-  targetDist_tof_y = y_dist;
+  // // 获取当前绝对位置
+  // read_dist_tof_ros();
+  // targetDist_tof_y = y_dist;
 
   // 判断移动方向正负
   if(dx >= 0){
@@ -434,6 +435,7 @@ void move_time_dx(double dx) {
   }
   else if(dx < 0){
     move_dir_flag = -1;
+    dx = -dx;
   }
   
 //   double kx = dx / sqrt(pow(dx,2) + pow(dy,2));
@@ -441,28 +443,30 @@ void move_time_dx(double dx) {
                     move_dir_flag * rush_speed*slide_k, move_dir_flag * -rush_speed*slide_k);
   
   start_time = millis();
+  // Serial.println(dx);
+  // Serial.println(start_time);
   while (1) {
     present_time = millis();
     if((present_time - start_time) >= dx){
       set_speed_target(0, 0, 0, 0);
       set_speed_to_stepper();
       rush_read_flag = 0;
-
+      // Serial.println(present_time);
       send_move_end();        // 发送移动结束信号
       break;
     }
 
-    // 获取当前绝对位置
-    if(read_tof_flag >= read_tof_freq) {
-      read_dist_tof_ros();
-    }
+    // // 获取当前绝对位置
+    // if(read_tof_flag >= read_tof_freq) {
+    //   read_dist_tof_ros();
+    // }
     
-    PID_yaw();                      // 方向矫正
+    // PID_yaw(0);                      // 方向矫正
 
-    if(read_tof_flag >= read_tof_freq) {
-      PID_tof_y(0);                 // 水平距离矫正
-      read_tof_flag = 0;
-    }
+    // if(read_tof_flag >= read_tof_freq) {
+    //   PID_tof_y(0);                 // 水平距离矫正
+    //   read_tof_flag = 0;
+    // }
 
     set_speed_to_stepper();
     // Serial.println(y_dist);
@@ -488,8 +492,8 @@ void move_time_dy(double dy) {
   PID_tof_x(1);          // 重置PID参数
 
   // 获取当前绝对位置
-  read_dist_tof_ros();
-  targetDist_tof_x = x_dist;
+  // read_dist_tof_ros();
+  // targetDist_tof_x = x_dist;
 
   // 判断移动方向正负
   if(dy >= 0){
@@ -497,6 +501,7 @@ void move_time_dy(double dy) {
   }
   else if(dy < 0){
     move_dir_flag = -1;
+    dy = -dy;
   }
   
 //   double kx = dx / sqrt(pow(dx,2) + pow(dy,2));
@@ -516,16 +521,16 @@ void move_time_dy(double dy) {
     }
 
     // 获取当前绝对位置
-    if(read_tof_flag >= read_tof_freq) {
-      read_dist_tof_ros();
-    }
+    // if(read_tof_flag >= read_tof_freq) {
+    //   read_dist_tof_ros();
+    // }
     
-    PID_yaw();                      // 方向矫正
+    // PID_yaw(0);                      // 方向矫正
 
-    if(read_tof_flag >= read_tof_freq) {
-      PID_tof_x(0);                 // 水平距离矫正
-      read_tof_flag = 0;
-    }
+    // if(read_tof_flag >= read_tof_freq) {
+    //   PID_tof_x(0);                 // 水平距离矫正
+    //   read_tof_flag = 0;
+    // }
 
     set_speed_to_stepper();
     // Serial.println(y_dist);
@@ -610,7 +615,7 @@ void move_to_y(double dy) {
     change_speed_flag_pre = change_speed_flag;
     
     if(change_speed_flag == 1){
-      PID_yaw();                      // 方向矫正
+      PID_yaw(0);                      // 方向矫正
     }
     
     if(read_tof_flag >= read_tof_freq) {
@@ -702,7 +707,7 @@ void move_to_x(double dx) {
     change_speed_flag_pre = change_speed_flag;
     
     if(change_speed_flag == 1){
-      PID_yaw();                      // 方向矫正
+      PID_yaw(0);                      // 方向矫正
     }
 
     if(read_tof_flag >= read_tof_freq) {
@@ -716,6 +721,47 @@ void move_to_x(double dx) {
     set_speed();
 
     read_tof_flag++;
+  }
+}
+
+
+// 出发时, 横向移动至灰度变为0
+void move_start() {
+  PID_tof_y(1);          // 重置PID参数
+
+  // targetDist_tof_y = y_dist;
+  //Serial.println(x_dist);
+  
+//   double kx = dx / sqrt(pow(dx,2) + pow(dy,2));
+  set_speed_target(-move_speed*slide_k, move_speed*slide_k, 
+                    move_speed*slide_k, -move_speed*slide_k);
+  while (1) {
+    // 获取七路信息
+    int read_gray_flag = read_gray();
+
+    // 如果到指定位置
+    if(read_gray_flag == 1) {
+      set_speed_target(0, 0, 0, 0);
+      set_speed_to_stepper();
+      move_read_flag = 0;
+
+      send_move_end();        // 发送移动结束信号
+      break;
+    }
+
+    PID_yaw(0);                      // 方向矫正
+
+    // if(read_tof_flag >= read_tof_freq) {
+    //   // PID_tof_y(0);                 // 水平距离矫正
+    //   read_tof_flag = 0;
+    // }
+
+    set_speed_to_stepper();
+    // Serial.println(y_dist);
+    // run_speed();
+    set_speed();
+
+    // read_tof_flag++;
   }
 }
 
@@ -792,7 +838,7 @@ void move_dist_dx(double dx) {
 
     change_speed_flag_pre = change_speed_flag;
     
-    PID_yaw();                      // 方向矫正
+    PID_yaw(0);                      // 方向矫正
 
     if(read_tof_flag >= read_tof_freq) {
       PID_tof_y(0);                 // 水平距离矫正
@@ -880,7 +926,7 @@ void move_dist_dy(double dy) {
 
     change_speed_flag_pre = change_speed_flag;
     
-    PID_yaw();                      // 方向矫正
+    PID_yaw(0);                      // 方向矫正
 
     if(read_tof_flag >= read_tof_freq) {
       // PID_tof_x(0);                 // 水平距离矫正
@@ -902,6 +948,8 @@ void move_compensate_x(int order_head) {
   int read_tof_flag = 0;
   int move_dir_flag = 1;
   double sub_temp = 0.0;
+  x_bias = 30000.0;
+  y_bias = 30000.0;
 
   // PID_tof_y(1);          // 重置PID参数
 
@@ -969,7 +1017,7 @@ void move_compensate_x(int order_head) {
       break;
     }
     
-    PID_yaw();                      // 方向矫正
+    PID_yaw(0);                      // 方向矫正
 
     // if(read_tof_flag >= read_tof_freq) {
     //   PID_tof_y(0);                 // 水平距离矫正
@@ -991,6 +1039,8 @@ void move_compensate_y(int order_head) {
   int read_tof_flag = 0;
   int move_dir_flag = 1;
   double sub_temp = 0.0;
+  x_bias = 30000.0;
+  y_bias = 30000.0;
 
   // read_bias();
 
@@ -1013,6 +1063,9 @@ void move_compensate_y(int order_head) {
 //                     move_dir_flag * move_compensate, move_dir_flag * move_compensate);
   while (1) {
     read_bias(order_head);
+    Serial.print(x_bias);
+    Serial.print("@");
+    Serial.println(y_bias);
 
     // 判断移动方向正负
     if(y_bias >= 0){
@@ -1043,7 +1096,7 @@ void move_compensate_y(int order_head) {
       break;
     }
     
-    PID_yaw();                      // 方向矫正
+    PID_yaw(0);                      // 方向矫正
 
     // if(read_tof_flag >= read_tof_freq) {
     //   PID_tof_y(0);                 // 水平距离矫正

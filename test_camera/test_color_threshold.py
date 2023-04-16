@@ -47,7 +47,7 @@ while True:
     # image = cv2.imread('./blue_circle.png') # 根据路径读取一张图片
 
     dst = cv2.cvtColor(image, cv2.COLOR_BGR2HSV) # BGR转HSV
-    cv2.imshow("BGR", dst) # 显示图片
+    # cv2.imshow("BGR", dst) # 显示图片
 
     dst = cv2.inRange(dst, hsv_low, hsv_high) # 通过HSV的高低阈值，提取图像部分区域
     cv2.imshow('dst', dst)

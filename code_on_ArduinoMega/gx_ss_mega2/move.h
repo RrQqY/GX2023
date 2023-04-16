@@ -17,7 +17,7 @@ extern double targetDist_tof_y;
 #define  read_tof_freq    1   // 读取ToF距离的频率
 
 // 直走速度
-#define  rush_speed       8000
+#define  rush_speed       3000
 #define  move_speed       5400      // 5000
 #define  move_speed_slow  2200      // 1200
 #define  move_compensate  2500      // 2500
@@ -31,9 +31,9 @@ extern double targetDist_tof_y;
 
 
 // 衡量距离目标点远近的位置阈值
-#define  dist_threshold_far    0.2        // 0.26
-#define  dist_threshold_close  0.02
-#define  dist_compensate_close  0.015
+#define  dist_threshold_far    0.18        // 0.26
+#define  dist_threshold_close  0.01      // 0.01
+#define  dist_compensate_close  0.01      // 0.01
 
 #define  kp_speed  0.0002*0.85*0.88      // 轮子速度到车身速度的换算系数
 // #define  kp_speed  0.00008      // 轮子速度到车身速度的换算系数
@@ -55,13 +55,13 @@ extern double targetDist_tof_y;
 
 #define  YawPWM_MAX     10000
 #define  TofPWM_MAX     10000
-#define  PWM_MIN        -8000
-#define  PWM_MAX        8000
+#define  PWM_MIN        -6000
+#define  PWM_MAX        6000
 
 // double targetYawPulses = 0.0;        // 用于控制车身的目标朝向角
 #define  targetYawPulses 0.0        // 用于控制车身的目标朝向角
 
-extern void PID_yaw();
+extern void PID_yaw(int clear_flag);
 extern void set_speed();
 extern void set_speed_target(int target_speed1, int target_speed2, int target_speed3, int target_speed4);
 extern void run_speed();
@@ -73,6 +73,7 @@ extern void move_to_x(double dx);
 extern void move_to_y(double dy);
 extern void move_compensate_x(int order_head);
 extern void move_compensate_y(int order_head);
+extern void move_start();
 
 // extern double targetYawPulses;
 extern int change_yaw_times;

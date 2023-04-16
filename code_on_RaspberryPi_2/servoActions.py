@@ -801,17 +801,29 @@ class servoActions():
         left_angle = self.leftside_angle - 31
         right_angle = self.leftside_angle + 26
 
-        pla3_pos1_down_get = [[left_angle, 45, 110, -45, self.grasp_open_angle],
-                            [left_angle, 8, 70, -65, self.grasp_open_angle],       # 放下
-                            [left_angle, 90, 135, -65, self.grasp_close_angle]]        # 缩回
+        # pla3_pos1_down_get = [[left_angle, 45, 110, -45, self.grasp_open_angle],
+        #                     [left_angle, 8, 70, -65, self.grasp_open_angle],       # 放下
+        #                     [left_angle, 90, 135, -65, self.grasp_close_angle]]        # 缩回
         
-        pla3_pos2_down_get = [[middle_angle, 80, 135, -10, self.grasp_open_angle],
-                            [middle_angle, 10, 92, -88, self.grasp_open_angle],       # 放下
+        # pla3_pos2_down_get = [[middle_angle, 80, 135, -10, self.grasp_open_angle],
+        #                     [middle_angle, 10, 92, -88, self.grasp_open_angle],       # 放下
+        #                     [middle_angle, 90, 135, -90, self.grasp_close_angle]]        # 缩回
+        
+        # pla3_pos3_down_get = [[right_angle, 45, 110, -45, self.grasp_open_angle],
+        #                     [right_angle, 8, 70, -65, self.grasp_open_angle],       # 放下
+        #                     [right_angle, 90, 135, -65, self.grasp_close_angle]]        # 缩回
+        
+        pla3_pos1_down_get = [[left_angle, 55, 135, -15, self.grasp_open_angle],
+                            [left_angle, 10, 82, -76, self.grasp_open_angle],       # 放下
+                            [left_angle, 90, 120, -65, self.grasp_close_angle]]        # 缩回
+        
+        pla3_pos2_down_get = [[middle_angle, 70, 135, 0, self.grasp_open_angle],
+                            [middle_angle, 15, 108, -93, self.grasp_open_angle],       # 放下
                             [middle_angle, 90, 135, -90, self.grasp_close_angle]]        # 缩回
         
-        pla3_pos3_down_get = [[right_angle, 45, 110, -45, self.grasp_open_angle],
-                            [right_angle, 8, 70, -65, self.grasp_open_angle],       # 放下
-                            [right_angle, 90, 135, -65, self.grasp_close_angle]]        # 缩回
+        pla3_pos3_down_get = [[right_angle, 55, 135, -15, self.grasp_open_angle],
+                            [right_angle, 10, 82, -76, self.grasp_open_angle],       # 放下
+                            [right_angle, 90, 120, -65, self.grasp_close_angle]]        # 缩回
 
         ### 位置1
         if pos == 1:
@@ -830,7 +842,7 @@ class servoActions():
             self.uservo.set_servo_angle(self.SERVO_base, pla3_pos1_down_get[1][0],velocity=100.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_0, pla3_pos1_down_get[1][1],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_1, pla3_pos1_down_get[1][2],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
-            self.uservo.set_servo_angle(self.SERVO_ID_2, pla3_pos1_down_get[1][3],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+            self.uservo.set_servo_angle(self.SERVO_ID_2, pla3_pos1_down_get[1][3],velocity=350.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_3, pla3_pos1_down_get[1][4],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             time.sleep(0.9 / self.decay)
 
@@ -868,7 +880,7 @@ class servoActions():
             self.uservo.set_servo_angle(self.SERVO_base, pla3_pos2_down_get[1][0],velocity=100.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_0, pla3_pos2_down_get[1][1],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_1, pla3_pos2_down_get[1][2],velocity=100.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
-            self.uservo.set_servo_angle(self.SERVO_ID_2, pla3_pos2_down_get[1][3],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+            self.uservo.set_servo_angle(self.SERVO_ID_2, pla3_pos2_down_get[1][3],velocity=270.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_3, pla3_pos2_down_get[1][4],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             time.sleep(0.9 / self.decay)
 
@@ -905,7 +917,7 @@ class servoActions():
             self.uservo.set_servo_angle(self.SERVO_base, pla3_pos3_down_get[1][0],velocity=100.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_0, pla3_pos3_down_get[1][1],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_1, pla3_pos3_down_get[1][2],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
-            self.uservo.set_servo_angle(self.SERVO_ID_2, pla3_pos3_down_get[1][3],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+            self.uservo.set_servo_angle(self.SERVO_ID_2, pla3_pos3_down_get[1][3],velocity=350.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_3, pla3_pos3_down_get[1][4],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             time.sleep(0.9 / self.decay)
 
@@ -1067,8 +1079,8 @@ class servoActions():
         放置货架③ (场地上方) 后方上层位置
         """
         middle_angle = self.leftside_angle - 2
-        left_angle = self.leftside_angle - 31
-        right_angle = self.leftside_angle + 26
+        left_angle = self.leftside_angle - 29
+        right_angle = self.leftside_angle + 24
 
         pla3_pos1_back_get = [[left_angle, 65, 95, -40, self.grasp_open_angle],
                             [left_angle, 5, 20, -20, self.grasp_open_angle],       # 放下
@@ -1108,7 +1120,7 @@ class servoActions():
 
             self.uservo.set_servo_angle(self.SERVO_base, pla3_pos1_back_get[2][0],velocity=100.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_0, pla3_pos1_back_get[2][1],velocity=150.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
-            self.uservo.set_servo_angle(self.SERVO_ID_1, pla3_pos1_back_get[2][2],velocity=250.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+            self.uservo.set_servo_angle(self.SERVO_ID_1, pla3_pos1_back_get[2][2],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_2, pla3_pos1_back_get[2][3],velocity=100.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_3, pla3_pos1_back_get[2][4],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             time.sleep(0.5 / self.decay)
@@ -1135,7 +1147,7 @@ class servoActions():
 
             self.uservo.set_servo_angle(self.SERVO_base, pla3_pos2_back_get[1][0],velocity=100.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_0, pla3_pos2_back_get[1][1],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
-            self.uservo.set_servo_angle(self.SERVO_ID_1, pla3_pos2_back_get[1][2],velocity=250.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+            self.uservo.set_servo_angle(self.SERVO_ID_1, pla3_pos2_back_get[1][2],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_2, pla3_pos2_back_get[1][3],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_3, pla3_pos2_back_get[1][4],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             time.sleep(0.6 / self.decay)
@@ -1172,7 +1184,7 @@ class servoActions():
 
             self.uservo.set_servo_angle(self.SERVO_base, pla3_pos3_back_get[1][0],velocity=100.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_0, pla3_pos3_back_get[1][1],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
-            self.uservo.set_servo_angle(self.SERVO_ID_1, pla3_pos3_back_get[1][2],velocity=250.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+            self.uservo.set_servo_angle(self.SERVO_ID_1, pla3_pos3_back_get[1][2],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_2, pla3_pos3_back_get[1][3],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_3, pla3_pos3_back_get[1][4],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
             time.sleep(0.6 / self.decay)
@@ -1197,7 +1209,7 @@ class servoActions():
 
     def compensate(self, pos=1):
         """
-        进入相机矫正位置 (pos=1表示场地上方加工区矫正, pos=2表示场地左方加工区矫正)
+        进入相机矫正位置 (pos=1表示场地上方加工区矫正, pos=2表示场地左方加工区矫正, pos=3表示决赛转盘处矫正)
         """
         if pos == 1:
             compensate = [[0 for i in range(5)] for j in range(1)]             
@@ -1216,6 +1228,67 @@ class servoActions():
             self.uservo.set_servo_angle(self.SERVO_ID_1, compensate[0][1],velocity=200.0, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_2, compensate[0][2],velocity=200.0, t_acc=self.acc, t_dec=self.dec)
             self.uservo.set_servo_angle(self.SERVO_ID_3, compensate[0][3],velocity=200.0, t_acc=self.acc, t_dec=self.dec)
+
+        elif pos == 3:
+            compensate = [[0 for i in range(5)] for j in range(1)]             
+            compensate = [[50, 20, 27, self.grasp_open_angle]]
+
+            self.uservo.set_servo_angle(self.SERVO_ID_0, compensate[0][0],velocity=200.0, t_acc=self.acc, t_dec=self.dec)
+            self.uservo.set_servo_angle(self.SERVO_ID_1, compensate[0][1],velocity=200.0, t_acc=self.acc, t_dec=self.dec)
+            self.uservo.set_servo_angle(self.SERVO_ID_2, compensate[0][2],velocity=200.0, t_acc=self.acc, t_dec=self.dec)
+            self.uservo.set_servo_angle(self.SERVO_ID_3, compensate[0][3],velocity=200.0, t_acc=self.acc, t_dec=self.dec)
+
+
+    # 放置转盘
+    def put_disc(self):
+        """
+        放置转盘
+        """
+        middle_angle = self.rightside_angle - 2
+        left_angle = self.rightside_angle - 45
+
+        disc_put = [[middle_angle, 105, 132, -24, self.grasp_close_angle],
+                    [left_angle, 110, 135, -36, self.grasp_open_angle+45],
+                    [middle_angle, 80, 60, -120, self.grasp_open_angle]]        # 缩回
+
+        ### 位置1
+        self.depo_down()
+        self.orient_to(middle_angle)
+        time.sleep(0.8 / self.decay)
+
+        self.grasp_close()
+        time.sleep(self.grasp_time / self.decay)
+
+        self.depo_up()
+        time.sleep(0.2 / self.decay)
+
+        self.uservo.set_servo_angle(self.SERVO_base, disc_put[0][0],velocity=170.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        self.uservo.set_servo_angle(self.SERVO_ID_0, disc_put[0][1],velocity=300.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        self.uservo.set_servo_angle(self.SERVO_ID_1, disc_put[0][2],velocity=350.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        self.uservo.set_servo_angle(self.SERVO_ID_2, disc_put[0][3],velocity=300.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        self.uservo.set_servo_angle(self.SERVO_ID_3, disc_put[0][4],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        time.sleep(2 / self.decay)
+
+        self.grasp_open()
+        time.sleep(self.grasp_time / self.decay)
+
+        self.uservo.set_servo_angle(self.SERVO_base, disc_put[1][0],velocity=75.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        self.uservo.set_servo_angle(self.SERVO_ID_0, disc_put[1][1],velocity=150.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        self.uservo.set_servo_angle(self.SERVO_ID_1, disc_put[1][2],velocity=250.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        self.uservo.set_servo_angle(self.SERVO_ID_2, disc_put[1][3],velocity=100.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        self.uservo.set_servo_angle(self.SERVO_ID_3, disc_put[1][4],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        time.sleep(1 / self.decay)
+
+        # self.uservo.set_servo_angle(self.SERVO_base, disc_put[2][0],velocity=100.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        # self.uservo.set_servo_angle(self.SERVO_ID_0, disc_put[2][1],velocity=150.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        # self.uservo.set_servo_angle(self.SERVO_ID_1, disc_put[2][2],velocity=250.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        # self.uservo.set_servo_angle(self.SERVO_ID_2, disc_put[2][3],velocity=100.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        # self.uservo.set_servo_angle(self.SERVO_ID_3, disc_put[2][4],velocity=200.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
+        # time.sleep(0.6 / self.decay)
+
+        self.orient_to(self.rightside_angle)
+        self.depo_down()
+        time.sleep(0.4 / self.decay)
 
 
     def scan(self):
@@ -1238,7 +1311,7 @@ class servoActions():
         """
         # 放入
         depo_down =  [[0 for i in range(5)] for j in range(4)]      # 放入左货仓
-        depo_down =  [[-17, -130, -64]]
+        depo_down =  [[-14, -127, -64]]
     
         self.uservo.set_servo_angle(self.SERVO_ID_0, depo_down[0][0],velocity=150.0 * self.decay, t_acc=self.acc, t_dec=self.dec)
         self.uservo.set_servo_angle(self.SERVO_ID_1, depo_down[0][1],velocity=300.0 * self.decay, t_acc=self.acc, t_dec=self.dec)

@@ -81,6 +81,10 @@ startPin = 17
 GPIO.setmode(GPIO.BCM)        # BMC或者BOARD模式
 GPIO.setup(startPin, GPIO.IN)
 
+camPin = 26
+GPIO.setmode(GPIO.BCM)        # BMC或者BOARD模式
+GPIO.setup(camPin, GPIO.OUT)
+
 lightPin = 23
 GPIO.setmode(GPIO.BCM)        # BMC或者BOARD模式
 GPIO.setup(lightPin, GPIO.OUT)
@@ -101,6 +105,18 @@ def lightOff():
     关闭补光灯
     """
     GPIO.output(lightPin, GPIO.LOW)
+
+def camOn():
+    """
+    打开摄像头
+    """
+    GPIO.output(camPin, GPIO.HIGH)
+
+def camOff():
+    """
+    关闭摄像头
+    """
+    GPIO.output(camPin, GPIO.LOW)
 
 def wait_start():
     """
@@ -170,6 +186,21 @@ def rush(dx, dy):
     send_rush_order(dx, dy)
     receive_rush_end()        # 等待下位机发送移动结束标志"f"
     # time.sleep(0.2)
+
+
+def move_start():
+    """
+    移动到起始位置
+    """
+    print('G' + '@')
+    while True:
+        Mega_uart.write('G')
+        Mega_uart.flush()
+        if Mega_uart.read().decode("ASCII") == 'o':
+            print('Received mega received flag !!!')
+            break
+    receive_move_end()        # 等待下位机发送移动结束标志"f"
+    # time.sleep(0.2)
     
 
 def receive_move_end():
@@ -225,7 +256,7 @@ def send_change_order(flag):
     flag = 1, 记录开始前角度
     flag = 2, 记录结束后角度
     """
-    # print('b' + str(int(bias_x * 100) + 300) + ',' + str(int(bias_x * 100) + 300) + '@')
+    print("X" + str(flag) + "@")
     # Mega_uart.write('b')
     # Mega_uart.flush()
     while True:
@@ -282,7 +313,7 @@ def compensate(side):
             # print("x_bias, y_bias: ", x_bias, y_bias, "time: ", etime-stime)
 
             # y轴矫正偏差 (让靶标出现在画面偏上方的位置) 
-            y_bias = y_bias - 0.12
+            y_bias = y_bias - 0.11     # 0.12
 
             # 向下位机发送偏差值
             send_bias(x_bias, y_bias)
@@ -325,6 +356,7 @@ def get_obj_color_maix():
     while True:
         data = Maix_uart.readline().decode("ASCII")
         if len(data) > 0:
+            # print("data: ", data)
             if data[1] == 'r':
                 obj_color_list.append("r")
                 # print("obj_color= " + obj_color)
@@ -341,7 +373,7 @@ def get_obj_color_maix():
                 obj_color_list.append("n")
                 # print("obj_color= " + obj_color)
 
-        print("color_scaned: ", obj_color_list)
+        # print("color_scaned: ", obj_color_list)
         if len(obj_color_list) >= 3:
             if (obj_color_list[0] == obj_color_list[1] == obj_color_list[2]) and (obj_color_list[0] != "n"):
                 obj_color = obj_color_list[0]
@@ -387,7 +419,7 @@ def order1():
             break;
         else :
             timeNow = time.time()
-            if timeNow - timeStart > 1.5:
+            if timeNow - timeStart > 2:
                 print('@ Time 1 out')
                 break;
         
@@ -411,6 +443,17 @@ def order2(target):
     print("@ Start order 2")
     servo.orient_to(servo.rightside_angle)        # 云台转动至上方
 
+    # # 向Maix发送开始标志"s"
+    # Maix_uart.write('s\n'.encode('ASCII'))
+    # Maix_uart.flush()
+    # while True:
+    #     order = Maix_uart.readline()
+    #     if len(order) > 0:
+    #         if order[0] == 'o':
+    #             break
+    camOn()
+    time.sleep(0.2)
+
     # lightOn()         # 打开补光灯
     color_target_list = []
     color_list = ['r', 'g', 'b']
@@ -418,28 +461,67 @@ def order2(target):
     for i in range(3):
         color_target_list.append(color_list[int(str(target)[i]) - 1])
 
+    # 等待直到检测值为'n'
+    while True:
+        color = get_obj_color_maix()
+        if (color == 'r') or (color == 'g') or (color == 'b'):
+            print("skip first color!!!!!!!!!")
+            time.sleep(1)
+            break
+    
+    Maix_uart.read_all()
+    time.sleep(0.2)
+
     target_i = 0
     for color_target in color_target_list:
         # 仓库转动至目标位置
         servo.depo_to(color_target)
-        print("@ Turn to target: ", color_target)
+        # print("@ Turn to target: ", color_target)
         while True:
             color = get_obj_color_maix()
             if color == color_target:
                 print("@ Get target color: ", color)
+                # time.sleep(0.3)
 
                 # 执行抓取
                 servo.get_pla1()                          # 抓取物块①
                 target_i += 1
+                time.sleep(0.2)
+
+                # servo.scan()
+                # time.sleep(0.8)
+
                 break
         
+        # if target_i == 3:
+        #     servo.grasp_open()
+        #     servo.depo_up()
+
         if target_i == 3:
             servo.grasp_open()
             servo.depo_up()
             break
         else:
             servo.scan()
-            time.sleep(0.8)
+            time.sleep(1.8)
+            print("scan again")
+
+            # # 向Maix发送结束标志"e"
+            # Maix_uart.write('e\n'.encode('ASCII'))
+            # Maix_uart.flush()
+            # while True:
+            #     order = Maix_uart.readline()
+            #     if len(order) > 0:
+            #         if order[0] == 'o':
+            #             break
+
+    
+            # break
+    camOff()
+    time.sleep(0.2)
+        # else:
+        #     servo.scan()
+        #     time.sleep(0.8)
 
     # lightOff()        # 关闭补光灯
 
@@ -586,17 +668,244 @@ def order6(target):
 
 
 # 场地坐标点参数
-disc_x = 0.33           # 转盘左侧抓取点x坐标
-disc_y = 1.81           # 转盘左侧抓取点y坐标
-qrcode_x = disc_x       # 二维码识别点x坐标
-qrcode_y = 0.65         # 二维码识别点y坐标
-pla2_x = 1.19           # 粗加工区中间点x坐标
-pla2_y = 2.03           # 粗加工区中间点y坐标
-pla3_x = 1.88           # 精加工区中间点x坐标
-pla3_y = 1.20           # 精加工区中间点y坐标
-back_y = 0.4            # 第一轮结束返回时y轴位置
+disc_x = 0.375           # 转盘左侧抓取点x坐标
+disc_x_2 = 0.31           # 转盘左侧抓取点x坐标
+disc_y = 1.765           # 转盘左侧抓取点y坐标
+qrcode_x = 0.48         # 二维码识别点x坐标
+qrcode_y = 0.64         # 二维码识别点y坐标
+pla2_x = 1.175           # 粗加工区中间点x坐标
+pla2_y = 2.04           # 粗加工区中间点y坐标
+pla3_x = 1.89           # 精加工区中间点x坐标
+pla3_x_back = 1.92      # 精加工区中间点返回时x坐标
+pla3_y = 1.25           # 精加工区中间点y坐标
+pla3_y_first = 1.41     # 精加工区中间点前一个点y坐标
+back_y = 0.32            # 第一轮结束返回时y轴位置
 end_x  = 2.25           # 结束区x轴位置
-end_y  = 2.25           # 结束区y轴位置
+end_y  = 0.14           # 结束区y轴位置
+
+
+def turn_1(target_1):
+    """
+    第一轮
+    """
+    move(disc_x, 0)
+    time.sleep(0.2)
+
+    move(0, disc_y)
+    time.sleep(0.2)
+
+    servo.scan()
+    time.sleep(1)
+    ### order2: 按target顺序识别转台物块颜色, 并抓取到指定仓库中
+    order2(target_1)
+
+    # 下位机角度偏移矫正
+    time.sleep(0.2)
+    send_change_order(2)
+    time.sleep(0.4)
+
+    servo.orient_to(servo.forward_angle)
+
+    move(0, pla2_y)
+    time.sleep(0.2)
+
+    move(pla2_x, 0)
+    time.sleep(0.2)
+
+    # servo.compensate(pos=1)
+    # time.sleep(1.4)
+
+    # compensate(side=1)
+    # time.sleep(0.2)
+
+    servo.grasp_open()
+    servo.depo_down()
+
+    ### order3: 放下物块② (场地上方) 位置
+    order3(target_1)
+    time.sleep(0.5)
+
+    ### order4: 抓取物块③ (场地上方) 位置
+    order4(target_1)
+    time.sleep(0.2)
+
+    # 下位机角度偏移矫正
+    time.sleep(0.2)
+    send_change_order(2)
+    time.sleep(0.4)
+
+    servo.orient_to(servo.leftside_angle)
+
+    move(pla3_x, 0)
+    time.sleep(0.2)
+
+    # # 向前撞墙矫正
+    # rush(0, 2)
+    # time.sleep(0.2)
+
+    # # 下位机角度偏移矫正
+    # time.sleep(0.2)
+    # send_change_order(2)
+    # time.sleep(0.4)
+
+    # rush(0, -0.5)
+    # time.sleep(0.2)
+
+    move(0, pla3_y)
+    time.sleep(0.2)
+
+    servo.compensate(pos=1)
+    time.sleep(1.4)
+
+    compensate(side=2)
+    time.sleep(0.2)
+
+    servo.grasp_open()
+    servo.depo_down()
+
+    ### order5: 放置物块③ (场地左侧) 下层位置
+    order5(target_1)
+    time.sleep(0.2)
+
+    servo.depo_up()
+
+    # 下位机角度偏移矫正
+    time.sleep(0.2)
+    send_change_order(2)
+    time.sleep(0.4)
+
+    servo.orient_to(servo.rightside_angle)
+
+    move(0, back_y)
+    time.sleep(0.2)
+
+    servo.servo_start()
+
+    # move(disc_x + 0.03, 0)
+    # time.sleep(0.2)
+    move(0.2, 0)
+    time.sleep(0.1)
+
+    # 撞墙定位
+    rush(-1.6, 0)
+    time.sleep(0.5)
+
+    # 下位机角度偏移矫正
+    time.sleep(0.2)
+    send_change_order(2)
+    time.sleep(0.5)
+
+
+def turn_2(target_2):
+    """
+    第二轮
+    """
+    move(disc_x_2, 0)
+    time.sleep(0.2)
+
+    move(0, disc_y)
+    time.sleep(0.2)
+
+    servo.scan()
+    time.sleep(1)
+    ### order2: 按target顺序识别转台物块颜色, 并抓取到指定仓库中
+    order2(target_2)
+
+    # 下位机角度偏移矫正
+    time.sleep(0.2)
+    send_change_order(2)
+    time.sleep(0.4)
+
+    servo.orient_to(servo.forward_angle)
+
+    move(0, pla2_y)
+    time.sleep(0.2)
+
+    move(pla2_x, 0)
+    time.sleep(0.2)
+
+    # servo.compensate(pos=1)
+    # time.sleep(1.4)
+
+    # compensate(side=1)
+    # time.sleep(0.2)
+
+    servo.grasp_open()
+    servo.depo_down()
+
+    ### order3: 放下物块② (场地上方) 位置
+    order3(target_2)
+    time.sleep(0.5)
+
+    ### order4: 抓取物块③ (场地上方) 位置
+    order4(target_2)
+    time.sleep(0.2)
+
+    # 下位机角度偏移矫正
+    time.sleep(0.2)
+    send_change_order(2)
+    time.sleep(0.4)
+
+    servo.orient_to(servo.leftside_angle)
+
+    move(pla3_x, 0)
+    time.sleep(0.2)
+
+    # # 向前撞墙矫正
+    # rush(0, 2)
+    # time.sleep(0.2)
+
+    # # 下位机角度偏移矫正
+    # time.sleep(0.2)
+    # send_change_order(2)
+    # time.sleep(0.4)
+
+    # 第一次在第一个靶标校准
+    move(0, pla3_y_first)
+    time.sleep(0.2)
+
+    servo.compensate(pos=1)
+    time.sleep(1.4)
+
+    compensate(side=3)     # 左侧位置带物块的补偿
+    time.sleep(0.2)
+
+    # 第二次在第二个靶标校准
+    move(0, pla3_y)
+    time.sleep(0.2)
+
+    compensate(side=3)     # 左侧位置带物块的补偿
+    time.sleep(0.2)
+
+    servo.grasp_open()
+    servo.depo_down()
+
+    ### order6: 放置物块③ (场地左侧) 上层位置
+    order6(target_2)
+    time.sleep(0.2)
+
+    servo.depo_up()
+
+    # 下位机角度偏移矫正
+    time.sleep(0.2)
+    send_change_order(2)
+    time.sleep(0.4)
+
+    move(0, end_y + 0.3)
+    time.sleep(0.2)
+
+    rush(0, -2.2)
+    time.sleep(0.2)
+
+    servo.servo_start()
+    servo.orient_to(servo.rightside_angle)
+
+    rush(2.2, 0)
+    time.sleep(0.2)
+
+    # move(end_x, 0)
+    # # time.sleep(0.2)
+
 
 def main():
     turnCount = 1                           # 当前为第几回合
@@ -612,8 +921,7 @@ def main():
     # 等待一键启动
     wait_start()
 
-    ##### 第一轮 #####
-    move(disc_x, 0)
+    move(qrcode_x, 0)
     time.sleep(0.2)
 
     move(0, qrcode_y)
@@ -623,286 +931,45 @@ def main():
     target_1, target_2 = order1()
     time.sleep(0.2)
 
-    move(0, disc_y)
-    time.sleep(0.2)
-
-    servo.scan()
-    time.sleep(0.6)
-    ### order2: 按target顺序识别转台物块颜色, 并抓取到指定仓库中
-    order2(target_1)
-
-    # 下位机角度偏移矫正
-    send_change_order(2)
-    time.sleep(0.2)
-
-    servo.orient_to(servo.forward_angle)
-
-    move(0, pla2_y)
-    time.sleep(0.2)
-
-    move(pla2_x, 0)
-    time.sleep(0.2)
-
-    servo.compensate(pos=1)
-    time.sleep(0.9)
-
-    compensate(side=1)
-    time.sleep(0.2)
-
-    servo.depo_up()
-
-    ### order3: 放下物块② (场地上方) 位置
-    order3(target_1)
-    time.sleep(0.5)
-
-    ### order4: 抓取物块③ (场地上方) 位置
-    order4(target_1)
-    time.sleep(0.2)
-
-    # 下位机角度偏移矫正
-    send_change_order(2)
-    time.sleep(0.2)
-
-    servo.orient_to(servo.leftside_angle)
-
-    move(pla3_x, 0)
-    time.sleep(0.2)
-
-    move(0, pla3_y)
-    time.sleep(0.2)
-
-    servo.compensate(pos=1)
-    time.sleep(0.9)
-
-    compensate(side=2)
-    time.sleep(0.2)
-
-    servo.depo_up()
-
-    ### order5: 放置物块③ (场地左侧) 下层位置
-    order5(target_1)
-    time.sleep(0.2)
-
-    servo.depo_up()
-
-    # 下位机角度偏移矫正
-    send_change_order(2)
-    time.sleep(0.2)
-
-    servo.orient_to(servo.rightside_angle)
-
-    move(0, back_y)
-    time.sleep(0.2)
-
-    move(disc_x, 0)
-    time.sleep(0.2)
+    ##### 第一轮 #####
+    turn_1(target_1)
 
     turnCount += 1
 
     ##### 第二轮 #####
-    move(0, disc_y)
-    time.sleep(0.2)
-
-    servo.scan()
-    time.sleep(0.6)
-    ### order2: 按target顺序识别转台物块颜色, 并抓取到指定仓库中
-    order2(target_2)
-
-    # 下位机角度偏移矫正
-    send_change_order(2)
-    time.sleep(0.2)
-
-    servo.orient_to(servo.forward_angle)
-
-    move(0, pla2_y)
-    time.sleep(0.2)
-
-    move(pla2_x, 0)
-    time.sleep(0.2)
-
-    servo.compensate(pos=1)
-    time.sleep(0.9)
-
-    compensate(side=1)
-    time.sleep(0.2)
-
-    servo.depo_up()
-
-    ### order3: 放下物块② (场地上方) 位置
-    order3(target_2)
-    time.sleep(0.5)
-
-    ### order4: 抓取物块③ (场地上方) 位置
-    order4(target_2)
-    time.sleep(0.2)
-
-    # 下位机角度偏移矫正
-    send_change_order(2)
-    time.sleep(0.2)
-
-    servo.orient_to(servo.leftside_angle)
-
-    move(pla3_x, 0)
-    time.sleep(0.2)
-
-    move(0, pla3_y)
-    time.sleep(0.2)
-
-    servo.compensate(pos=1)
-    time.sleep(0.9)
-
-    compensate(side=3)     # 左侧位置带物块的补偿
-    time.sleep(0.2)
-
-    servo.depo_up()
-
-    ### order6: 放置物块③ (场地左侧) 上层位置
-    order6(target_2)
-    time.sleep(0.2)
-
-    servo.depo_up()
-
-    # 下位机角度偏移矫正
-    send_change_order(2)
-    time.sleep(0.2)
-
-    move(0, end_y)
-    time.sleep(0.2)
-
-    move(end_x, 0)
-    time.sleep(0.2)
+    turn_2(target_2)
 
 
 if __name__=='__main__':
     print("@ Start Game!!!")
-    main()
+    main() 
 
-    # move(0.3, 0)
-    # time.sleep(0.2)
-    # print("change order")
+    ### 1. 测试转盘物块颜色识别和抓取
+    # target_1 = 132
+    # servo.scan()
+    # time.sleep(1)
+    # order2(target_1)
 
-    # move(1, 0)
-    # time.sleep(0.2)
-
-    # servo.depo_to('r')
-    # time.sleep(3)
-
-    # target_1 = 213
+    ### 2. 测试粗加工区视觉补偿矫正
+    # target_1 = 132
     # servo.orient_to(servo.forward_angle)
-    # time.sleep(0.5)
+    # servo.compensate(pos=1)
+    # time.sleep(1)
+    # compensate(side=1)
+    # time.sleep(1)
 
-    # send_change_order(1)
-    # time.sleep(0.2)
-
+    ### 3. 测试粗加工区视抓取和放置
+    # target_1 = 132
+    # servo.orient_to(servo.forward_angle)
+    # servo.grasp_open()
+    # servo.depo_down()
+    # time.sleep(1)
     # order3(target_1)
     # time.sleep(0.5)
-
-    # send_change_order(2)
-    # time.sleep(0.2)
-
     # order4(target_1)
     # time.sleep(0.2)
-
-    # 测试转盘抓取 order2
-    # servo.scan()
-    # time.sleep(1.2)
-    # servo.get_pla1()
-
-    # servo.orient_to(servo.rightside_angle)
-    # servo.scan()
-    # time.sleep(2)
-    # servo.get_pla1()
-
-    # servo.servo_start()
-    # servo.orient_to(servo.forward_angle)        # 云台转动至上方
-    # time.sleep(0.5)
-    # main()
-
-    # lightOff()
-
-    # servo.servo_start()
-
-    # move(0.4, 0)
-    # time.sleep(1)
-
-    # move(0, 1.92)
-    # time.sleep(1)
-
-    # move(0.61, 0)
-    # time.sleep(1)
-
-    # servo.compensate()
-    # servo.orient_to(servo.forward_angle)        # 云台转动至上方\
-    # time.sleep(1)
-
-    # compensate(side=1)
-
-
-    # servo.compensate()
-    # servo.orient_to(servo.forward_angle)        # 云台转动至上方\
-    # time.sleep(1)
-
-    # compensate(side=1)
-
-    # rush(0, 2.5)
-    # time.sleep(1)
-    # move(0, -0.45)
-
-    # target_1, target_2 = order1()
-
-    # servo.grasp_open()
-    # time.sleep(0.2)
-
-    # servo.orient_to(servo.leftside_angle)
     
-    # servo.compensate(pos=2)
-    # time.sleep(1.2)
-    # compensate(side=2)
-    # servo.depo_up()
-    # time.sleep(1)
-    
-    # servo.depo_to("green")
-    # servo.get_pla3_back(2)
-    # time.sleep(0.5)
-
-    # servo.depo_to("red")
-    # servo.get_pla3_back(1)
-    # time.sleep(0.5)
-
-    # servo.depo_to("blue")
-    # servo.get_pla3_back(3)
-
-    # servo.put_pla2(2)
-
-    # # 从转盘上抓取物块
-    # servo.orient_to(servo.rightside_angle)
-    # servo.scan()
-    # time.sleep(2)
-
-    # servo.get_pla1()
-    # time.sleep(0.5)
-
-    # # 将物块放置到转盘上
-    # servo.orient_to(servo.rightside_angle)
-    # servo.scan()
-    # time.sleep(2)
-
-    # servo.put_pla1()
-    # time.sleep(0.5)
-
-    # servo.depo_to("green")
-    # servo.orient_to(servo.forward_angle)
-    # servo.scan()
-
-    # obj_color = get_obj_color_maix()
-    # print("@@", obj_color)
-
+    ### 4. 测试读取MaixPy返回颜色
     # while True:
-    #     receive_move_end()
-
-    # while True:
-    #     # if startButton() == 1:        # 按下开始按钮
-    #     test_main()
-    #     while True: pass
-        
-    #     time.sleep(0.1)
+    #     color = get_obj_color_maix()
+    #     print(color)

@@ -462,6 +462,9 @@ double y_dist_temp = 30000.0;
 // }
 
 
+double x_dist_list[6] = {};
+double y_dist_list[6] = {};
+
 // 获取树莓派2传回的ToF传感器检测距离x_dist和y_dist
 // 格式为“x + x_dist（xxxx形式，结果/1000以m为单位） + '@'”, y_dist同理
 void read_dist_tof_ros() {
@@ -481,6 +484,7 @@ void read_dist_tof_ros() {
     if(serial_pi2.available() > 0){
       // 按位读取字符串
       int serial_char = serial_pi2.read();
+      // Serial.println(serial_char);
       str += (char)serial_char;
 
       // 如果读取到R（ROS），则开始读取到达标志
@@ -552,14 +556,31 @@ void read_dist_tof_ros() {
       }
     }
   }
-  x_dist = x_dist_temp;
+//   x_dist = x_dist_temp;
+//   y_dist_org = y_dist_temp;
+//   y_dist = 2.4 - y_dist_org;
+
+  double x_dist_list_temp = 0.0;
+  double y_dist_list_temp = 0.0;
+
+  x_dist_list_temp = x_dist_temp;
   y_dist_org = y_dist_temp;
-  y_dist = 2.4 - y_dist_org;
+  y_dist_list_temp = 2.4 - y_dist_org;
+
+  // 滑动加权滤波
+    for (int i = 1; i <= 5; i ++) {
+        x_dist_list[i] = x_dist_list[i - 1];
+        y_dist_list[i] = y_dist_list[i - 1];
+    }
+    x_dist_list[0] = x_dist_list_temp;
+    y_dist_list[0] = y_dist_list_temp;
+    x_dist = (6.0*x_dist_list[0] + 5.0*x_dist_list[1] + 4.0*x_dist_list[2] + 3.0*x_dist_list[3] + 2.0*x_dist_list[4] + 1.0*x_dist_list[5]) / 21.0;
+    y_dist = (6.0*y_dist_list[0] + 5.0*y_dist_list[1] + 4.0*y_dist_list[2] + 3.0*y_dist_list[3] + 2.0*y_dist_list[4] + 1.0*y_dist_list[5]) / 21.0;
 
   // Serial.print("@");
-  // Serial.print(x_dist_temp);
+  // Serial.print(x_dist);
   // Serial.print(", ");
-  // Serial.println(y_dist_temp);
+  // Serial.println(y_dist);
 }
 
 
@@ -616,6 +637,11 @@ void send_compensate_end(){
 
 // 向树莓派发送接收到命令的标志
 void send_receive_order_end(){
+  // Serial.println("@@@@@@");
+  while(serial_pi1.available() > 0){
+    serial_pi1.read();
+  }
+  // delay_ms(500);
   serial_pi1.write('o');
   return ;
 }
@@ -708,6 +734,11 @@ void read_bias(int order_head) {
     x_bias = y_bias_temp;
     y_bias = -x_bias_temp;
   }
+  // 左侧加工区矫正
+  else if (order_head == 7) {
+    x_bias = -y_bias_temp;
+    y_bias = x_bias_temp;
+  }
 
   // Serial.print("@");
   // Serial.print(x_bias);
@@ -726,6 +757,7 @@ int read_order_head() {
 
       // 移动指定距离（ToF）
       if (serial_char == 'M') {
+        // Serial.println("MMMMMMMMM");
         send_receive_order_end();
         return  1;
       }
@@ -748,6 +780,16 @@ int read_order_head() {
       else if (serial_char == 'X') {
         send_receive_order_end();
         return  5;
+      }
+      // 用灰度获取出发位置
+      else if (serial_char == 'G') {
+        send_receive_order_end();
+        return  6;
+      }
+      // 用灰度获取出发位置
+      else if (serial_char == 'c') {
+        send_receive_order_end();
+        return  7;
       }
     }
   }

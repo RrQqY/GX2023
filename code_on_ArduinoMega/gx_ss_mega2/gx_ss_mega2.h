@@ -39,4 +39,6 @@
 #include "imu.h"
 #include "serial.h"
 
+extern int read_gray();
+
 #endif
